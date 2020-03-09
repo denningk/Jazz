@@ -4,9 +4,11 @@ struct GLFWwindow;
 
 namespace Jazz {
 
+	class Engine;
+
 	class Platform {
 	public:
-		Platform();
+		Platform(Engine* engine, const char* applicationName);
 		~Platform();
 
 		GLFWwindow* GetWindow() { return _window; }
@@ -14,6 +16,7 @@ namespace Jazz {
 		const bool StartGameLoop();
 
 	private:
+		Engine* _engine;
 		GLFWwindow* _window;
 	};
 }

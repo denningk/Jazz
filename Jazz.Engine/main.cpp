@@ -1,13 +1,11 @@
 #include "Types.h"
 #include "Defines.h"
-
+#include "Engine.h"
 #include "Logger.h"
 
-#include <GLFW/glfw3.h>
-
-
 int main(int argc, const char** argv) {
-	Jazz::Logger::Log("Initializing Jazz Engine: %d", 4);
-
+	Jazz::Engine* engine = new Jazz::Engine("Jazz");
+	engine->Run();
+	delete engine;
 	return 0;
 }
