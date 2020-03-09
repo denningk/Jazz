@@ -13,6 +13,8 @@ namespace Jazz {
 
 		GLFWwindow* GetWindow() { return _window; }
 
+		void GetRequiredExtensions(U32* extensionCount, const char*** extensionNames);
+
 		const bool StartGameLoop();
 
 	private:
