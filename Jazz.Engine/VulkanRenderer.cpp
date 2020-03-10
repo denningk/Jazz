@@ -29,6 +29,17 @@ namespace Jazz {
 			platformExtensions.push_back(pfe[i]);
 		}
 
+		platformExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+		instanceCreateInfo.enabledExtensionCount = (U32)platformExtensions.size();
+		instanceCreateInfo.ppEnabledExtensionNames = platformExtensions.data();
+
+		// Validation Layers
+		std::vector<const char*> requireValidationLayers = {
+			"VK_LAYER_KHRONOS_validation"
+		};
+
+		
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
