@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Types.h"
+
 struct GLFWwindow;
 
 namespace Jazz {

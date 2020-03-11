@@ -3,6 +3,7 @@
 #include "Platform.h"
 #include "Logger.h"
 #include "Defines.h"
+#include "VulkanUtils.h"
 #include "VulkanRenderer.h"
 
 namespace Jazz {
@@ -35,11 +36,39 @@ namespace Jazz {
 		instanceCreateInfo.ppEnabledExtensionNames = platformExtensions.data();
 
 		// Validation Layers
-		std::vector<const char*> requireValidationLayers = {
+		std::vector<const char*> requiredValidationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
 
-		
+		// Get available layers
+		U32 availableLayerCount = 0;
+		VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr));
+		std::vector<VkLayerProperties> availableLayers(availableLayerCount);
+		VK_CHECK(vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data()));
+
+		// Verify that all required layers are available
+		bool success = true;
+		for (U32 i = 0; i < (U32)requiredValidationLayers.size(); ++i) {
+			bool found = false;
+			for (U32 j = 0; j < availableLayerCount; ++j) {
+				if (strcmp(requiredValidationLayers[i], availableLayers[j].layerName) == 0) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				success = false;
+				Logger::Fatal("Required validation layer is missing: %s", requiredValidationLayers[i]);
+				break;
+			}
+		}
+
+		instanceCreateInfo.enabledLayerCount = (U32)requiredValidationLayers.size();
+		instanceCreateInfo.ppEnabledLayerNames = requiredValidationLayers.data();
+
+		// Create instance
+		VK_CHECK(vkCreateInstance(&instanceCreateInfo, nullptr, &_instance));
 	}
 
 	VulkanRenderer::~VulkanRenderer() {

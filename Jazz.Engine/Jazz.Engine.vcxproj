@@ -100,6 +100,7 @@
     <ClInclude Include="Platform.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="VulkanRenderer.h" />
+    <ClInclude Include="VulkanUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

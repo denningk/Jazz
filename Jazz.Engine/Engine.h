@@ -5,6 +5,7 @@
 namespace Jazz {
 	
 	class Platform;
+	class VulkanRenderer;
 
 	class Engine {
 	public:
@@ -17,5 +18,6 @@ namespace Jazz {
 
 	private:
 		Platform* _platform;
+		VulkanRenderer* _renderer;
 	};
 }
