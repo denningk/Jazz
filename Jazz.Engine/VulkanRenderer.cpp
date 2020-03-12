@@ -7,6 +7,32 @@
 #include "VulkanRenderer.h"
 
 namespace Jazz {
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData) {
+
+		switch (messageSeverity) {
+		default:
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+			Logger::Error(pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+			Logger::Warn(pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+			Logger::Log(pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+			Logger::Trace(pCallbackData->pMessage);
+			break;
+		}
+
+		return VK_FALSE;
+	}
+
 	VulkanRenderer::VulkanRenderer(Platform* platform) {
 		_platform = platform;
 		Logger::Trace("Initializing Vulkan renderer...");
@@ -69,9 +95,71 @@ namespace Jazz {
 
 		// Create instance
 		VK_CHECK(vkCreateInstance(&instanceCreateInfo, nullptr, &_instance));
+
+		// Create debugger
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+		debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT, VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
+		debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+		debugCreateInfo.pfnUserCallback = debugCallback;
+		debugCreateInfo.pUserData = this;
+
+		PFN_vkCreateDebugUtilsMessengerEXT debugMessengerFunc = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkCreateDebugUtilsMessengerEXT");
+		ASSERT_MSG(debugMessengerFunc, "Failed to create debug messenger!");
+		debugMessengerFunc(_instance, &debugCreateInfo, nullptr, &_debugMessenger);
+
+		_platform->CreateSurface(_instance, &_surface);
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
 
+		if (_debugMessenger) {
+			PFN_vkDestroyDebugUtilsMessengerEXT debugMessengerFunc = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkDestroyDebugUtilsMessengerEXT");
+			// ASSERT_MSG(createDebugMessenger, "Failed to destroy debug messenger!");
+			debugMessengerFunc(_instance, _debugMessenger, nullptr);
+		}
+
+		vkDestroyInstance(_instance, nullptr);
+	}
+
+	VkPhysicalDevice VulkanRenderer::selectPhysicalDevice() {
+		U32 deviceCount = 0;
+		vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
+		if (deviceCount == 0) {
+			Logger::Fatal("No supported physical devices were found.");
+		}
+		std::vector<VkPhysicalDevice> devices(deviceCount);
+		vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
+
+		for (U32 i = 0; i < deviceCount; ++i) {
+			if (physicalDeviceMeetsRequirements(devices[i])) {
+				return devices[i];
+			}
+		}
+
+		Logger::Fatal("No devices found which meet application requirements");
+		return nullptr;
+	}
+
+	const bool VulkanRenderer::physicalDeviceMeetsRequirements(VkPhysicalDevice physicalDevice) {
+		I32 graphicsQueueIndex = -1;
+		I32 presentationQueueIndex = -1;
+		
+	}
+
+	void VulkanRenderer::detectQueueFamilyIndices(VkPhysicalDevice physicalDevice, I32* graphicsQueueIndex, I32* presentationQueueIndex) {
+		U32 queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+		std::vector<VkQueueFamilyProperties> familyProperties(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, familyProperties.data());
+
+		for (U32 i = 0; i < queueFamilyCount; ++i) {
+
+			// Does it support the graphics queue?
+			if (familyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				*graphicsQueueIndex = i;
+			}
+
+			VkBool32 supportsPresentation = VK_FALSE;
+		}
 	}
 }

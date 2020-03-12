@@ -14,6 +14,10 @@ namespace Jazz {
 		~VulkanRenderer();
 
 	private:
+		VkPhysicalDevice selectPhysicalDevice();
+		const bool physicalDeviceMeetsRequirements(VkPhysicalDevice physicalDevice);
+		void detectQueueFamilyIndices(VkPhysicalDevice physicalDevice, I32* graphicsQueueIndex, I32* presentationQueueIndex);
+	private:
 		Platform* _platform;
 
 		VkInstance _instance;
@@ -22,5 +26,7 @@ namespace Jazz {
 
 		VkPhysicalDevice _physicalDevice;
 		VkDevice _device; // Logical device
+
+		VkSurfaceKHR _surface;
 	};
 }

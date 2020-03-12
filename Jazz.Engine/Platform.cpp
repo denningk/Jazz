@@ -4,9 +4,8 @@
 
 #include "Logger.h"
 #include "Engine.h"
+#include "VulkanUtils.h"
 #include "Platform.h"
-
-
 
 namespace Jazz {
 	Platform::Platform(Engine* engine, const char* applicationName) {
@@ -33,6 +32,9 @@ namespace Jazz {
 		*extensionNames = glfwGetRequiredInstanceExtensions(extensionCount);
 	}
 
+	void Platform::CreateSurface(VkInstance instance, VkSurfaceKHR* surface) {
+		VK_CHECK(glfwCreateWindowSurface(instance, _window, nullptr, surface));
+	}
 
 	const bool Platform::StartGameLoop() {
 		while (!glfwWindowShouldClose(_window)) {
