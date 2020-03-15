@@ -1,5 +1,13 @@
 #pragma once
 
+#ifndef U32_MAX
+#define U32_MAX 0xffffffffui32
+#endif // !U32_max
+
+#ifndef U64_MAX
+#define U64_MAX 0xffffffffffffffffui64
+#endif // !U32_max
+
 #if _WIN32 || _WIN64
 #define PLATFORM_WINDOWS
 #else

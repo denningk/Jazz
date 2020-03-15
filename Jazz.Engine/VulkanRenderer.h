@@ -28,6 +28,9 @@ namespace Jazz {
 		void createLogicalDevice(std::vector<const char*>& requireValidationLayers);
 		void createShader(const char* name);
 		char* readShaderFile(const char* filename, const char* shaderType, U64* fileSize);
+		void createSwapchain();
+		void createSwapchainImagesAndViews();
+		void createRenderPass();
 	private:
 		Platform* _platform;
 
@@ -46,5 +49,12 @@ namespace Jazz {
 
 		U64 _shaderStageCount;
 		std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
+
+		VkSurfaceFormatKHR _swapchainImageFormat;
+		VkExtent2D _swapchainExtent;
+		VkSwapchainKHR _swapchain;
+
+		std::vector<VkImage> _swapchainImages;
+		std::vector<VkImageView> _swapchainImageViews;
 	};
 }

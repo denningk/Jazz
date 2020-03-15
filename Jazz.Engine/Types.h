@@ -12,3 +12,8 @@ typedef signed char			I8;
 
 typedef double				F64;
 typedef float				F32;
+
+struct Extent2D {
+	I32 Width;
+	I32 Height;
+};

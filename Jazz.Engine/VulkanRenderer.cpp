@@ -4,6 +4,7 @@
 #include "Platform.h"
 #include "Logger.h"
 #include "Defines.h"
+#include "TMath.h"
 #include "VulkanUtils.h"
 #include "VulkanRenderer.h"
 
@@ -119,6 +120,11 @@ namespace Jazz {
 
 		// Shader creation
 		createShader("main");
+
+		createSwapchain();
+		createSwapchainImagesAndViews();
+
+		createRenderPass();
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
@@ -361,5 +367,185 @@ namespace Jazz {
 		file.close();
 
 		return fileBuffer;
+	}
+
+	void VulkanRenderer::createSwapchain() {
+		VulkanSwapchainSupportDetails swapchainSupport = querySwapchainSupport(_physicalDevice);
+		VkSurfaceCapabilitiesKHR capabilities = swapchainSupport.Capabilities;
+
+		// Choose a swap surface format
+		bool found = false;
+		for (auto format : swapchainSupport.Formats) {
+
+			// Preferred formats
+			if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				_swapchainImageFormat = format;
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			_swapchainImageFormat = swapchainSupport.Formats[0];
+		}
+
+		// Choose a present mode
+		VkPresentModeKHR presentMode;
+		found = false;
+		for (auto mode : swapchainSupport.PresentationModes) {
+		
+			// If preferred mode is available
+			if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
+				presentMode = mode;
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		}
+
+		// Swapchain extent
+		if (capabilities.currentExtent.width != U32_MAX) {
+			_swapchainExtent = capabilities.currentExtent;
+		} else {
+			Extent2D extent = _platform->GetFrameBufferExtent();
+			_swapchainExtent = { (U32)extent.Width, (U32)extent.Height };
+
+			// Clamp to a value allowed by the GPU
+			_swapchainExtent.width = TMath::ClampU32(_swapchainExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			_swapchainExtent.height = TMath::ClampU32(_swapchainExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+		}
+
+		U32 imageCount = capabilities.minImageCount + 1;
+
+		if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {
+			imageCount = capabilities.maxImageCount;
+		}
+
+		// Swapchain create info
+		VkSwapchainCreateInfoKHR swapchainCreateInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
+		swapchainCreateInfo.surface = _surface;
+		swapchainCreateInfo.minImageCount = imageCount;
+		swapchainCreateInfo.imageFormat = _swapchainImageFormat.format;
+		swapchainCreateInfo.imageColorSpace = _swapchainImageFormat.colorSpace;
+		swapchainCreateInfo.imageExtent = _swapchainExtent;
+		swapchainCreateInfo.imageArrayLayers = 1;
+		swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		// Setup the queue family indices
+		if (_graphicsFamilyQueueIndex != _presentationFamilyQueueIndex) {
+			U32 queueFamilyIndices[] = { (U32)_graphicsFamilyQueueIndex, (U32)_presentationFamilyQueueIndex };
+			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			swapchainCreateInfo.queueFamilyIndexCount = 2;
+			swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+		} else {
+			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			swapchainCreateInfo.queueFamilyIndexCount = 0;
+			swapchainCreateInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		swapchainCreateInfo.preTransform = capabilities.currentTransform;
+		swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		swapchainCreateInfo.presentMode = presentMode;
+		swapchainCreateInfo.clipped = VK_TRUE;
+		swapchainCreateInfo.oldSwapchain = nullptr;
+
+		VK_CHECK(vkCreateSwapchainKHR(_device, &swapchainCreateInfo, nullptr, &_swapchain));
+	}
+
+	void VulkanRenderer::createSwapchainImagesAndViews() {
+
+		// Images
+		U32 swapchainImageCount = 0;
+		vkGetSwapchainImagesKHR(_device, _swapchain, &swapchainImageCount, nullptr);
+		_swapchainImages.resize(swapchainImageCount);
+		_swapchainImageViews.resize(swapchainImageCount);
+		vkGetSwapchainImagesKHR(_device, _swapchain, &swapchainImageCount, _swapchainImages.data());
+
+		for (U32 i = 0; i < swapchainImageCount; ++i) {
+			VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+			viewInfo.image = _swapchainImages[i];
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.format = _swapchainImageFormat.format;
+			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			viewInfo.subresourceRange.baseMipLevel = 0;
+			viewInfo.subresourceRange.levelCount = 1;
+			viewInfo.subresourceRange.baseArrayLayer = 0;
+			viewInfo.subresourceRange.layerCount = 1;
+
+			VK_CHECK(vkCreateImageView(_device, &viewInfo, nullptr, &_swapchainImageViews[i]));
+		}
+
+	}
+
+	void VulkanRenderer::createRenderPass() {
+
+		// Color attachment
+		VkAttachmentDescription colorAttachment = {};
+		colorAttachment.format = _swapchainImageFormat.format;
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		// Color attachment reference
+		VkAttachmentReference colorAttachmentReference = {};
+		colorAttachmentReference.attachment = 0;
+		colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// Depth attachment
+
+		// Find depth format
+		const U64 candidateCount = 3;
+		VkFormat candidates[candidateCount] = {
+			VK_FORMAT_D32_SFLOAT,
+			VK_FORMAT_D32_SFLOAT_S8_UINT,
+			VK_FORMAT_D24_UNORM_S8_UINT
+		};
+		
+		U32 flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		VkFormat depthFormat;
+		bool depthFormatFound = false;
+		for (U64 i = 0; i < candidateCount; ++i) {
+			VkFormatProperties properties;
+			vkGetPhysicalDeviceFormatProperties(_physicalDevice, candidates[i], &properties);
+
+			if ((properties.linearTilingFeatures && flags) == flags) {
+				depthFormat = candidates[i];
+				depthFormatFound = true;
+				break;
+			} else if ((properties.optimalTilingFeatures & flags) == flags) {
+				depthFormat = candidates[i];
+				depthFormatFound = true;
+				break;
+			}
+		}
+
+		if (!depthFormatFound) {
+			Logger::Fatal("Unable to find a supported depth format");
+		}
+
+		// Depth attachment
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.format = _swapchainImageFormat.format;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		// Color attachment reference
+		VkAttachmentReference depthAttachmentReference = {};
+		depthAttachmentReference.attachment = 1;
+		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+
+
 	}
 }

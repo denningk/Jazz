@@ -16,6 +16,8 @@ namespace Jazz {
 
 		GLFWwindow* GetWindow() { return _window; }
 
+		Extent2D GetFrameBufferExtent();
+
 		void GetRequiredExtensions(U32* extensionCount, const char*** extensionNames);
 
 		void CreateSurface(VkInstance instance, VkSurfaceKHR* surface);

@@ -53,5 +53,8 @@
     <ClInclude Include="VulkanUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

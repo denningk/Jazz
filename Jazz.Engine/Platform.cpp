@@ -28,6 +28,13 @@ namespace Jazz {
 		glfwTerminate();
 	}
 
+	Extent2D Platform::GetFrameBufferExtent() {
+		Extent2D extent;
+		glfwGetFramebufferSize(_window, &extent.Width, &extent.Height);
+		return extent;
+	}
+
+
 	void Platform::GetRequiredExtensions(U32* extensionCount, const char*** extensionNames) {
 		*extensionNames = glfwGetRequiredInstanceExtensions(extensionCount);
 	}
