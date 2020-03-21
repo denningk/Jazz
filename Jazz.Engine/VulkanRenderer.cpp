@@ -126,6 +126,7 @@ namespace Jazz {
 
 		createRenderPass();
 		createGraphicsPipeline();
+		createFramebuffers();
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
@@ -336,9 +337,9 @@ namespace Jazz {
 
 		// Vertex shader stage
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = fragmentShaderModule;
-		vertShaderStageInfo.pName = "main";
+		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		fragShaderStageInfo.module = fragmentShaderModule;
+		fragShaderStageInfo.pName = "main";
 
 		_shaderStageCount = 2;
 		_shaderStages.push_back(vertShaderStageInfo);
@@ -697,5 +698,25 @@ namespace Jazz {
 		VK_CHECK(vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &_pipeline));
 
 		Logger::Log("Graphics pipeline created!");
+	}
+
+	void VulkanRenderer::createFramebuffers() {
+		_swapChainFramebuffers.resize(_swapchainImageViews.size());
+
+		for (U64 i = 0; i < _swapchainImageViews.size(); i++) {
+			VkImageView attachments[] = {
+				_swapchainImageViews[i]
+			};
+
+			VkFramebufferCreateInfo framebufferCreateInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+			framebufferCreateInfo.renderPass = _renderPass;
+			framebufferCreateInfo.attachmentCount = 2;
+			framebufferCreateInfo.pAttachments = attachments;
+			framebufferCreateInfo.width = _swapchainExtent.width;
+			framebufferCreateInfo.height = _swapchainExtent.height;
+			framebufferCreateInfo.layers = 1;
+
+			VK_CHECK(vkCreateFramebuffer(_device, &framebufferCreateInfo, nullptr, &_swapChainFramebuffers[i]));
+		}
 	}
 }
