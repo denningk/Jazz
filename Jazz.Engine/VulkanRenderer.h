@@ -31,6 +31,7 @@ namespace Jazz {
 		void createSwapchain();
 		void createSwapchainImagesAndViews();
 		void createRenderPass();
+		void createDepthStencil(VkFormat depthFormat);
 		void createGraphicsPipeline();
 		void createFramebuffers();
 		void createCommandPool();
@@ -60,6 +61,12 @@ namespace Jazz {
 		std::vector<VkImage> _swapchainImages;
 		std::vector<VkImageView> _swapchainImageViews;
 		std::vector<VkFramebuffer> _swapChainFramebuffers;
+
+		struct {
+			VkImage image;
+			VkDeviceMemory memory;
+			VkImageView view;
+		} _depthStencil;
 
 		VkRenderPass _renderPass;
 		VkPipelineLayout _pipelineLayout;

@@ -126,7 +126,7 @@ namespace Jazz {
 
 		createRenderPass();
 		createGraphicsPipeline();
-		createFramebuffers();
+		//createFramebuffers();
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
@@ -543,10 +543,12 @@ namespace Jazz {
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		// Color attachment reference
+		// Depth attachment reference
 		VkAttachmentReference depthAttachmentReference = {};
 		depthAttachmentReference.attachment = 1;
 		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		// Create depth stencil
 
 		// Subpass
 		VkSubpassDescription subpass = {};
@@ -579,6 +581,22 @@ namespace Jazz {
 		renderPassCreateInfo.dependencyCount = 1;
 		renderPassCreateInfo.pDependencies = &dependency;
 		VK_CHECK(vkCreateRenderPass(_device, &renderPassCreateInfo, nullptr, &_renderPass));
+	}
+
+	void VulkanRenderer::createDepthStencil(VkFormat depthFormat) {
+		VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.format = depthFormat;
+		imageInfo.extent.width = _swapchainExtent.width;
+		imageInfo.extent.height = _swapchainExtent.height;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		VK_CHECK(vkCreateImage(_device, &imageInfo, nullptr, &_depthStencil.image));
 	}
 
 	void VulkanRenderer::createGraphicsPipeline() {
@@ -704,9 +722,9 @@ namespace Jazz {
 		_swapChainFramebuffers.resize(_swapchainImageViews.size());
 
 		for (U64 i = 0; i < _swapchainImageViews.size(); i++) {
-			VkImageView attachments[] = {
-				_swapchainImageViews[i]
-			};
+			VkImageView attachments[2];
+			attachments[0] = _swapchainImageViews[i];
+			attachments[1] = _depthStencil.view;
 
 			VkFramebufferCreateInfo framebufferCreateInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 			framebufferCreateInfo.renderPass = _renderPass;
