@@ -115,6 +115,8 @@ namespace Jazz {
 		// Select physical device
 		_physicalDevice = selectPhysicalDevice();
 
+		vkGetPhysicalDeviceMemoryProperties(_physicalDevice, &_physicalDeviceMemory);
+
 		// Create logical device
 		createLogicalDevice(requiredValidationLayers);
 
@@ -584,6 +586,8 @@ namespace Jazz {
 	}
 
 	void VulkanRenderer::createDepthStencil(VkFormat depthFormat) {
+
+		// Depth Stencil Image
 		VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageInfo.format = depthFormat;
@@ -597,6 +601,16 @@ namespace Jazz {
 		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
 		VK_CHECK(vkCreateImage(_device, &imageInfo, nullptr, &_depthStencil.image));
+	
+
+		// Memory Requirements
+		VkMemoryRequirements memoryReqs{};
+		vkGetImageMemoryRequirements(_device, _depthStencil.image, &memoryReqs);
+
+		// Memory Allocation
+		VkMemoryAllocateInfo memoryAlloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+		memoryAlloc.allocationSize = memoryReqs.size;
+		//memoryAlloc.memoryTypeIndex = 
 	}
 
 	void VulkanRenderer::createGraphicsPipeline() {

@@ -43,6 +43,7 @@ namespace Jazz {
 		VkDebugUtilsMessengerEXT _debugMessenger;
 
 		VkPhysicalDevice _physicalDevice;
+		VkPhysicalDeviceMemoryProperties _physicalDeviceMemory;
 		VkDevice _device; // Logical device
 		I32 _graphicsFamilyQueueIndex;
 		I32 _presentationFamilyQueueIndex;
