@@ -52,7 +52,7 @@ namespace Jazz {
 
 		VkSurfaceKHR _surface;
 
-		U64 _shaderStageCount;
+		U32 _shaderStageCount;
 		std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
 
 		VkSurfaceFormatKHR _swapchainImageFormat;

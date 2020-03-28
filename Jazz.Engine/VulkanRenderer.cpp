@@ -551,6 +551,7 @@ namespace Jazz {
 		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		// Create depth stencil
+		createDepthStencil(depthFormat);
 
 		// Subpass
 		VkSubpassDescription subpass = {};
@@ -610,7 +611,26 @@ namespace Jazz {
 		// Memory Allocation
 		VkMemoryAllocateInfo memoryAlloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 		memoryAlloc.allocationSize = memoryReqs.size;
-		//memoryAlloc.memoryTypeIndex = 
+		memoryAlloc.memoryTypeIndex = VulkanUtils::getMemoryType(memoryReqs.memoryTypeBits, _physicalDeviceMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VK_CHECK(vkAllocateMemory(_device, &memoryAlloc, nullptr, &_depthStencil.memory));
+		VK_CHECK(vkBindImageMemory(_device, _depthStencil.image, _depthStencil.memory, 0));
+
+		VkImageViewCreateInfo imageView = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		imageView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageView.image = _depthStencil.image;
+		imageView.format = depthFormat;
+		imageView.subresourceRange.baseMipLevel = 0;
+		imageView.subresourceRange.levelCount = 1;
+		imageView.subresourceRange.baseArrayLayer = 0;
+		imageView.subresourceRange.layerCount = 1;
+		imageView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		
+		// Aspect should only be set on depth/stencil formats
+		if (depthFormat >= VK_FORMAT_D16_UNORM_S8_UINT) {
+			imageView.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+
+		VK_CHECK(vkCreateImageView(_device, &imageView, nullptr, &_depthStencil.view));
 	}
 
 	void VulkanRenderer::createGraphicsPipeline() {
@@ -658,7 +678,7 @@ namespace Jazz {
 		multisamplingCreateInfo.alphaToCoverageEnable = VK_FALSE;
 		multisamplingCreateInfo.alphaToOneEnable = VK_FALSE;
 
-		// Depth and stencil testing
+		// Pipeline Depth and stencil testing
 		VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
 		depthStencil.depthTestEnable = VK_TRUE;
 		depthStencil.depthWriteEnable = VK_TRUE;

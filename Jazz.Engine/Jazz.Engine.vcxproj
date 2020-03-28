@@ -46,13 +46,13 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)build\</OutDir>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\</IntDir>
-    <IncludePath>D:\VulkanSDK\1.2.131.2\Include;$(SolutionDir)External\Include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\VulkanSDK\1.2.131.2\Include;$(SolutionDir)External\Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\</OutDir>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\</IntDir>
-    <IncludePath>D:\VulkanSDK\1.2.131.2\Include;$(SolutionDir)External\Include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\VulkanSDK\1.2.131.2\Include;$(SolutionDir)External\Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -92,6 +92,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Platform.cpp" />
     <ClCompile Include="VulkanRenderer.cpp" />
+    <ClCompile Include="VulkanUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h" />
