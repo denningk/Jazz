@@ -818,7 +818,16 @@ namespace Jazz {
 			renderPassInfo.pClearValues = clearValues;
 
 			vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		
+			vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+
+			vkCmdDraw(_commandBuffers[i], 3, 1, 0, 0);
+
+			vkCmdEndRenderPass(_commandBuffers[i]);
+			VK_CHECK(vkEndCommandBuffer(_commandBuffers[i]));
 		}
+	}
+
+	void VulkanRenderer::drawFrame() {
+
 	}
 }

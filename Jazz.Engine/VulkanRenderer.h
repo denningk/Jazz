@@ -19,7 +19,7 @@ namespace Jazz {
 	public:
 		VulkanRenderer(Platform* platform);
 		~VulkanRenderer();
-
+		void drawFrame();
 	private:
 		VkPhysicalDevice selectPhysicalDevice();
 		const bool physicalDeviceMeetsRequirements(VkPhysicalDevice physicalDevice);

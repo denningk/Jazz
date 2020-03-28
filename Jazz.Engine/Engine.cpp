@@ -20,6 +20,6 @@ namespace Jazz {
 	}
 
 	void Engine::OnLoop(const F32 deltaTime) {
-
+		_renderer->drawFrame();
 	}
 }
