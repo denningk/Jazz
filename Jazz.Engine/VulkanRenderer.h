@@ -35,6 +35,7 @@ namespace Jazz {
 		void createGraphicsPipeline();
 		void createFramebuffers();
 		void createCommandPool();
+		void createCommandBuffers();
 	private:
 		Platform* _platform;
 
@@ -61,7 +62,7 @@ namespace Jazz {
 
 		std::vector<VkImage> _swapchainImages;
 		std::vector<VkImageView> _swapchainImageViews;
-		std::vector<VkFramebuffer> _swapChainFramebuffers;
+		std::vector<VkFramebuffer> _swapchainFramebuffers;
 
 		struct {
 			VkImage image;
@@ -73,5 +74,6 @@ namespace Jazz {
 		VkPipelineLayout _pipelineLayout;
 		VkPipeline _pipeline;
 		VkCommandPool _commandPool;
+		std::vector<VkCommandBuffer> _commandBuffers;
 	};
 }

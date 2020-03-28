@@ -128,7 +128,10 @@ namespace Jazz {
 
 		createRenderPass();
 		createGraphicsPipeline();
-		//createFramebuffers();
+		createFramebuffers();
+
+		createCommandPool();
+		createCommandBuffers();
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
@@ -753,7 +756,7 @@ namespace Jazz {
 	}
 
 	void VulkanRenderer::createFramebuffers() {
-		_swapChainFramebuffers.resize(_swapchainImageViews.size());
+		_swapchainFramebuffers.resize(_swapchainImageViews.size());
 
 		for (U64 i = 0; i < _swapchainImageViews.size(); i++) {
 			VkImageView attachments[2];
@@ -768,7 +771,7 @@ namespace Jazz {
 			framebufferCreateInfo.height = _swapchainExtent.height;
 			framebufferCreateInfo.layers = 1;
 
-			VK_CHECK(vkCreateFramebuffer(_device, &framebufferCreateInfo, nullptr, &_swapChainFramebuffers[i]));
+			VK_CHECK(vkCreateFramebuffer(_device, &framebufferCreateInfo, nullptr, &_swapchainFramebuffers[i]));
 		}
 	}
 
@@ -782,5 +785,40 @@ namespace Jazz {
 		poolInfo.flags = 0;
 
 		VK_CHECK(vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool));
+	}
+
+	void VulkanRenderer::createCommandBuffers() {
+		_commandBuffers.resize(_swapchainFramebuffers.size());
+
+		VkCommandBufferAllocateInfo commandBufferInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		commandBufferInfo.commandPool = _commandPool;
+		commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferInfo.commandBufferCount = (U32)_commandBuffers.size();
+
+		VK_CHECK(vkAllocateCommandBuffers(_device, &commandBufferInfo, _commandBuffers.data()));
+
+		for (U64 i = 0; i < _commandBuffers.size(); i++) {
+			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+			beginInfo.flags = 0;
+			beginInfo.pInheritanceInfo = nullptr;
+
+			VK_CHECK(vkBeginCommandBuffer(_commandBuffers[i], &beginInfo));
+
+
+			VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+			renderPassInfo.renderPass = _renderPass;
+			renderPassInfo.framebuffer = _swapchainFramebuffers[i];
+			renderPassInfo.renderArea.offset = { 0,0 };
+			renderPassInfo.renderArea.extent = _swapchainExtent;
+
+			VkClearValue clearValues[2];
+			clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+			clearValues[1].depthStencil = { 1.0f, 0 };
+			renderPassInfo.clearValueCount = 2;
+			renderPassInfo.pClearValues = clearValues;
+
+			vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		
+		}
 	}
 }
