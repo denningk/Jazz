@@ -771,4 +771,16 @@ namespace Jazz {
 			VK_CHECK(vkCreateFramebuffer(_device, &framebufferCreateInfo, nullptr, &_swapChainFramebuffers[i]));
 		}
 	}
+
+	void VulkanRenderer::createCommandPool() {
+		I32 graphicsQueueIndex = -1;
+		I32 presentationQueueIndex = -1;
+		detectQueueFamilyIndices(_physicalDevice, &graphicsQueueIndex, &presentationQueueIndex);
+
+		VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+		poolInfo.queueFamilyIndex = presentationQueueIndex;
+		poolInfo.flags = 0;
+
+		VK_CHECK(vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool));
+	}
 }
