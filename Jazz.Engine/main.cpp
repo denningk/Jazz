@@ -4,7 +4,7 @@
 #include "Logger.h"
 
 int main(int argc, const char** argv) {
-	Jazz::Engine* engine = new Jazz::Engine("Jazz");
+	Jazz::Engine* engine = new Jazz::Engine("Jazz Graphics Engine");
 	engine->Run();
 	delete engine;
 	return 0;

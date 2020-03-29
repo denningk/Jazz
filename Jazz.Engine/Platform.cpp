@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "Engine.h"
 #include "VulkanUtils.h"
+#include "VulkanRenderer.h"
 #include "Platform.h"
 
 namespace Jazz {
@@ -49,6 +50,8 @@ namespace Jazz {
 
 			_engine->OnLoop(0);
 		}
+
+		_engine->DeviceWaitIdle();
 
 		return true;
 	}

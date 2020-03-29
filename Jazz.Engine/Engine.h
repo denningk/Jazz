@@ -16,6 +16,7 @@ namespace Jazz {
 
 		void OnLoop(const F32 deltaTime);
 
+		void DeviceWaitIdle();
 	private:
 		Platform* _platform;
 		VulkanRenderer* _renderer;

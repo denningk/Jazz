@@ -132,9 +132,33 @@ namespace Jazz {
 
 		createCommandPool();
 		createCommandBuffers();
+		createSemaphores();
 	}
 
 	VulkanRenderer::~VulkanRenderer() {
+		vkDestroyCommandPool(_device, _commandPool, nullptr);
+
+		for (auto framebuffer : _swapchainFramebuffers) {
+			vkDestroyFramebuffer(_device, framebuffer, nullptr);
+		}
+
+		vkDestroyPipeline(_device, _pipeline, nullptr);
+		vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
+		vkDestroyRenderPass(_device, _renderPass, nullptr);
+
+		for (auto imageView : _swapchainImageViews) {
+			vkDestroyImageView(_device, imageView, nullptr);
+		}
+
+		vkDestroyImageView(_device, _depthStencil.view, nullptr);
+		vkFreeMemory(_device, _depthStencil.memory, nullptr);
+		vkDestroyImage(_device, _depthStencil.image, nullptr);
+
+		vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
+		vkDestroySemaphore(_device, _imageAvailableSemaphore, nullptr);
+
+		vkDestroySwapchainKHR(_device, _swapchain, nullptr);
+		vkDestroyDevice(_device, nullptr);
 
 		if (_debugMessenger) {
 			PFN_vkDestroyDebugUtilsMessengerEXT debugMessengerFunc = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -142,6 +166,7 @@ namespace Jazz {
 			debugMessengerFunc(_instance, _debugMessenger, nullptr);
 		}
 
+		vkDestroySurfaceKHR(_instance, _surface, nullptr);
 		vkDestroyInstance(_instance, nullptr);
 	}
 
@@ -570,7 +595,7 @@ namespace Jazz {
 		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.srcAccessMask = 0;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 		const U32 attachmentCount = 2;
 		VkAttachmentDescription attachments[attachmentCount] = {
@@ -641,9 +666,9 @@ namespace Jazz {
 		// Viewport
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = (F32)_swapchainExtent.height;
+		viewport.y = 0.0f;
 		viewport.width = (F32)_swapchainExtent.width;
-		viewport.height = -(F32)_swapchainExtent.height;
+		viewport.height = (F32)_swapchainExtent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -666,7 +691,7 @@ namespace Jazz {
 		rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizerCreateInfo.lineWidth = 1.0f;
 		rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizerCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizerCreateInfo.depthBiasEnable = VK_FALSE;
 		rasterizerCreateInfo.depthBiasConstantFactor = 0.0f;
 		rasterizerCreateInfo.depthBiasClamp = 0.0f;
@@ -753,6 +778,11 @@ namespace Jazz {
 		VK_CHECK(vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &_pipeline));
 
 		Logger::Log("Graphics pipeline created!");
+
+		for (auto shader : _shaderStages) {
+			vkDestroyShaderModule(_device, shader.module, nullptr);
+		}
+		
 	}
 
 	void VulkanRenderer::createFramebuffers() {
@@ -827,7 +857,47 @@ namespace Jazz {
 		}
 	}
 
-	void VulkanRenderer::drawFrame() {
+	void VulkanRenderer::createSemaphores() {
+		VkSemaphoreCreateInfo semaphoreInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
 
+		VK_CHECK(vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore));
+		VK_CHECK(vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore));
+	}
+
+	void VulkanRenderer::drawFrame() {
+		U32 imageIndex;
+		vkAcquireNextImageKHR(_device, _swapchain, U64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	
+		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+
+		VkSemaphore waitSemaphores[] = { _imageAvailableSemaphore };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &_commandBuffers[imageIndex];
+
+		VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
+		submitInfo.signalSemaphoreCount = 1; 
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		VK_CHECK(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+
+		VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapchains[] = { _swapchain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapchains;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
+
+		vkQueuePresentKHR(_presentationQueue, &presentInfo);
+	}
+
+	void VulkanRenderer::deviceWaitIdle() {
+		vkDeviceWaitIdle(_device);
 	}
 }

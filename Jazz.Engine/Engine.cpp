@@ -12,7 +12,8 @@ namespace Jazz {
 	}
 
 	Engine::~Engine() {
-
+		delete _renderer;
+		delete _platform;
 	}
 
 	void Engine::Run() {
@@ -21,5 +22,9 @@ namespace Jazz {
 
 	void Engine::OnLoop(const F32 deltaTime) {
 		_renderer->drawFrame();
+	}
+
+	void Engine::DeviceWaitIdle() {
+		_renderer->deviceWaitIdle();
 	}
 }

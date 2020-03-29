@@ -20,6 +20,7 @@ namespace Jazz {
 		VulkanRenderer(Platform* platform);
 		~VulkanRenderer();
 		void drawFrame();
+		void deviceWaitIdle();
 	private:
 		VkPhysicalDevice selectPhysicalDevice();
 		const bool physicalDeviceMeetsRequirements(VkPhysicalDevice physicalDevice);
@@ -36,6 +37,7 @@ namespace Jazz {
 		void createFramebuffers();
 		void createCommandPool();
 		void createCommandBuffers();
+		void createSemaphores();
 	private:
 		Platform* _platform;
 
@@ -75,5 +77,8 @@ namespace Jazz {
 		VkPipeline _pipeline;
 		VkCommandPool _commandPool;
 		std::vector<VkCommandBuffer> _commandBuffers;
+
+		VkSemaphore _imageAvailableSemaphore;
+		VkSemaphore _renderFinishedSemaphore;
 	};
 }
